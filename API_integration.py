@@ -1,3 +1,5 @@
+import tkinter as tk
+from tkinter import ttk
 import requests, base64, json, math
 from datetime import datetime, timedelta
 
@@ -54,31 +56,105 @@ def get_ids():
 
 #matches the id with candidate's name and surname
 def get_candidates_name():
-    api_req_needed = math.ceil(len(candidateList)/50)
+    api_req_needed = math.ceil(num_candidates/50)
+    list_responses = []
 
     for n in range(api_req_needed):
         string_id = ''
         
         for i in range(n*50, (n*50)+50):
-            if i > num_candidates:
+            if i >= num_candidates:
                 break
             else:
                 string_id = string_id + str(candidateList[i].candid) + ','
         payload = {'candidate_ids': '%s' % string_id}
         r = requests.get(api_url + 'candidates', headers = headers, params = payload)
         parsed = json.loads(r.text)
-        for i in range(len(parsed)):
-            candidateList[(n*50) + i].name = parsed[i]['first_name'] + ' ' + parsed[i]['last_name']
-
-def output():
+        list_responses.extend(parsed)
     for i in range(num_candidates):
-        print(candidateList[i].name)
-        print(candidateList[i].candid)
-        print(candidateList[i].role)
-        print(candidateList[i].applications)
-        print()
+        for n in range(len(list_responses)):
+            if candidateList[i].candid == list_responses[n]['id']:
+                candidateList[i].name = list_responses[n]['first_name'] + ' ' + list_responses[n]['last_name']
+                break
+
+def table():
+    
+        root = tk.Tk()
+        container = ttk.Frame(root)
+        canvas = tk.Canvas(container)
+        canvas.config(width=900, height=600)
+        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(
+                scrollregion=canvas.bbox("all")
+            )
+        )
+
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+
+        canvas.configure(yscrollcommand=scrollbar.set)
+
+##        lbl = ttk.Label(scrollable_frame, text="Application Review", width= 17)
+##        lbl.configure(background='white')
+##        lbl.grid(column=0, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Screening")
+        lbl.configure(background='white')
+        lbl.grid(column=1, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Home Task")
+        lbl.configure(background='white')
+        lbl.grid(column=2, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Try Out")
+        lbl.configure(background='white')
+        lbl.grid(column=3, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Level 1")
+        lbl.configure(background='white')
+        lbl.grid(column=4, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Final Level")
+        lbl.configure(background='white')
+        lbl.grid(column=5, row=0, padx=25, pady=(25, 45))
+
+        lbl = ttk.Label(scrollable_frame, text="Offer")
+        lbl.configure(background='white')
+        lbl.grid(column=6, row=0, padx=25, pady=(25, 45))
+
+        for i in range(num_candidates):
+##            if candidateList[i].applications == "Application Review":
+##                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+##                lbl.grid(column=0, row=i)
+            if candidateList[i].applications == "Screening":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=1, row=i+1)
+            elif candidateList[i].applications == "Take Home Test":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=2, row=i+1)
+            elif candidateList[i].applications == "Try Out":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=3, row=i+1)
+            elif candidateList[i].applications == "Level 1":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=4, row=i+1)
+            elif candidateList[i].applications == "Final Level":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=5, row=i+1)
+            elif candidateList[i].applications == "Offer":
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
+                lbl.grid(column=6, row=i+1)
+
+        container.pack()
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        root.mainloop()
 
 get_eng_jobs()
 get_ids()
 get_candidates_name()
-output()
+table()
