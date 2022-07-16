@@ -3,6 +3,11 @@ from tkinter import ttk
 import requests, base64, json, math
 from datetime import datetime, timedelta
 
+today = datetime.now()
+today = today.isoformat()
+today = today.partition("T")[0]
+today = datetime.strptime(today, "%Y-%m-%d")
+
 my_date = datetime.now()
 my_date = my_date - timedelta(days=90)
 my_date = my_date.isoformat()
@@ -21,11 +26,12 @@ job_ids = []
 
 class Candidate(object):
     """__init__() functions as the class constructor"""
-    def __init__(self, candid=None, name=None, applications=None, role=None):
+    def __init__(self, candid=None, name=None, applications=None, role=None, last_activity=None):
         self.candid = candid
         self.name = name
         self.applications = applications
         self.role = role
+        self.last_activity = last_activity
 
 #gets all open jobs in engineering department
 def get_eng_jobs():
@@ -48,7 +54,7 @@ def get_ids():
         for i in range(candidate_count):
             candidateList.append(Candidate(parsed[i]['candidate_id']))
             candidateList[-1].candid = parsed[i]['candidate_id']
-            candidateList[-1].role = parsed[i]['jobs'][0]['name']
+            candidateList[-1].role = parsed[i]['jobs'][0]['name'].replace('Software', '')
             candidateList[-1].applications = parsed[i]['current_stage']['name']
 
     global num_candidates
@@ -75,14 +81,22 @@ def get_candidates_name():
         for n in range(len(list_responses)):
             if candidateList[i].candid == list_responses[n]['id']:
                 candidateList[i].name = list_responses[n]['first_name'] + ' ' + list_responses[n]['last_name']
+                candidateList[i].last_activity = list_responses[n]['last_activity']
+                candidateList[i].last_activity = candidateList[i].last_activity.partition("T")[0]
+                candidateList[i].last_activity = datetime.strptime(candidateList[i].last_activity, "%Y-%m-%d")
+                candidateList[i].last_activity = abs((today - candidateList[i].last_activity).days)
                 break
-
+            
 def table():
     
         root = tk.Tk()
+        root.title('Engineering Talent Pipeline by Gian')
         container = ttk.Frame(root)
+        space = '                       '
+        lbl = ttk.Label(root, text=f'{space}{space}{space} Screening{space}  Home Task{space}   Try Out{space}         Level 1{space}      Final Level{space}     Offer')
+        lbl.pack(fill='x')
         canvas = tk.Canvas(container)
-        canvas.config(width=900, height=600)
+        canvas.config(width=1100, height=600)
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
 
@@ -99,31 +113,37 @@ def table():
 
 ##        lbl = ttk.Label(scrollable_frame, text="Application Review", width= 17)
 ##        lbl.configure(background='white')
-##        lbl.grid(column=0, row=0, padx=25, pady=(25, 45))
+##        lbl.grid(column=0, row=0, padx=25, pady=(20, 45))
 
-        lbl = ttk.Label(scrollable_frame, text="Screening")
-        lbl.configure(background='white')
-        lbl.grid(column=1, row=0, padx=25, pady=(25, 45))
+        sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+        sepa.grid(row=0, column= 0, pady=(0, 15), sticky='EW', columnspan=7)
 
-        lbl = ttk.Label(scrollable_frame, text="Home Task")
-        lbl.configure(background='white')
-        lbl.grid(column=2, row=0, padx=25, pady=(25, 45))
+        scrollable_frame.columnconfigure(6, minsize=140)
 
-        lbl = ttk.Label(scrollable_frame, text="Try Out")
-        lbl.configure(background='white')
-        lbl.grid(column=3, row=0, padx=25, pady=(25, 45))
+        #tobecanceled = 0
 
-        lbl = ttk.Label(scrollable_frame, text="Level 1")
-        lbl.configure(background='white')
-        lbl.grid(column=4, row=0, padx=25, pady=(25, 45))
+        for i in range(6):
+            if i == 0:
+                sepa = ttk.Separator(scrollable_frame, orient="vertical")
+                sepa.grid(row=0, column= i, padx=(202, 0), sticky='NS', rowspan=num_candidates+1)
+            else:
+                sepa = ttk.Separator(scrollable_frame, orient="vertical")
+                sepa.grid(row=0, column= i, padx=(152, 0), sticky='NS', rowspan=num_candidates+1)
 
-        lbl = ttk.Label(scrollable_frame, text="Final Level")
-        lbl.configure(background='white')
-        lbl.grid(column=5, row=0, padx=25, pady=(25, 45))
-
-        lbl = ttk.Label(scrollable_frame, text="Offer")
-        lbl.configure(background='white')
-        lbl.grid(column=6, row=0, padx=25, pady=(25, 45))
+##        for i in range(num_candidates):
+##            if candidateList[i].applications == 'Application Review':
+##                tobecanceled +=1
+##
+##        num_candidates = len(candidateList)
+##
+##        for i in range(num_candidates):
+##            if candidateList[i].applications == 'Application Review':
+##                candidateList.remove(candidateList[i])
+##                i -= 1
+##                
+##        for i in range(num_candidates):
+##            lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+##            lbl.grid(column=0, row=i+1, pady=(0, 25))
 
         for i in range(num_candidates):
 ##            if candidateList[i].applications == "Application Review":
@@ -131,22 +151,58 @@ def table():
 ##                lbl.grid(column=0, row=i)
             if candidateList[i].applications == "Screening":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=1, row=i+1)
+                lbl.grid(column=1, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
             elif candidateList[i].applications == "Take Home Test":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=2, row=i+1)
+                lbl.grid(column=2, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
             elif candidateList[i].applications == "Try Out":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=3, row=i+1)
+                lbl.grid(column=3, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
             elif candidateList[i].applications == "Level 1":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=4, row=i+1)
+                lbl.grid(column=4, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
             elif candidateList[i].applications == "Final Level":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=5, row=i+1)
+                lbl.grid(column=5, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
             elif candidateList[i].applications == "Offer":
                 lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].name}")
-                lbl.grid(column=6, row=i+1)
+                lbl.grid(column=6, row=i+1, pady=(0, 25))
+                if candidateList[i].last_activity > 14:
+                    lbl.config(foreground='red')
+                lbl = ttk.Label(scrollable_frame, text=f"{candidateList[i].role.replace('Engineer', '')}")
+                lbl.grid(column=0, row=i+1, pady=(0, 25))
+                sepa = ttk.Separator(scrollable_frame, orient="horizontal")
+                sepa.grid(row=i+1, column= 0, pady=(12, 0), sticky='EW', columnspan=7)
 
         container.pack()
         canvas.pack(side="left", fill="both", expand=True)
